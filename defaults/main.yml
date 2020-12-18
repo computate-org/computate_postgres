@@ -1,0 +1,2 @@
+POSTGRES_NAME: postgres
+POSTGRES_SERVICE: "postgresql"
