@@ -7,7 +7,7 @@
   package:
     name: [postgresql-server]
   become: yes
-  when: PSQL_EXISTS.stat.exists
+  when: not PSQL_EXISTS.stat.exists
 - name: Initialize the database
   shell: /usr/bin/postgresql-setup initdb
   args:
