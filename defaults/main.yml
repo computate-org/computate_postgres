@@ -1,3 +1,20 @@
 ---
+
+#######################
+# PostgreSQL defaults #
+#######################
+
 POSTGRES_NAME: postgres
+POSTGRES_SRC: "/usr/local/src/{{ POSTGRES_NAME }}"
+POSTGRES_OPT: "/opt/{{ POSTGRES_NAME }}"
 POSTGRES_SERVICE: "postgresql"
+POSTGRES_VERSION: 10.15
+POSTGRES_TAG: REL_10_15
+POSTGRES_REPO: git://git.postgresql.org/git/postgresql.git
+
+####################
+# Ansible defaults #
+####################
+
+# Add to an ansible-vault the username of your user on your computer (echo $HOSTNAME). 
+USER_NAME: "{{ lookup('env', 'USER') }}"
