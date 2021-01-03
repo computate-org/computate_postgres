@@ -20,8 +20,16 @@
     name: "{{ POSTGRES_SRC }}"
     state: directory
     owner: "{{ USER_NAME }}"
+    group: "{{ USER_NAME }}"
   become: yes
-- name: Clone the {{ POSTGRES_NAME }} source code
+- name: Create the {{ POSTGRES_NAME }} opt directory {{ POSTGRES_OPT }}
+  file:
+    name: "{{ POSTGRES_OPT }}"
+    state: directory
+    owner: "{{ USER_NAME }}"
+    group: "{{ USER_NAME }}"
+  become: yes
+- name: Clone the {{ POSTGRES_NAME }} source code into {{ POSTGRES_SRC }}
   git:
     repo: "{{ POSTGRES_REPO }}"
     dest: "{{ POSTGRES_SRC }}"
@@ -30,41 +38,51 @@
   shell: "./configure --with-openssl --with-libxml --with-libxslt --with-systemd --with-selinux --prefix={{ POSTGRES_OPT }}"
   args:
     chdir: "{{ POSTGRES_SRC }}"
-    creates: "{{ POSTGRES_SRC }}/bootstrap"
-#- name: Boostrap the {{ POSTGRES_NAME }} application
-#  shell: ./bootstrap
-#  args:
-#    chdir: "{{ POSTGRES_SRC }}"
-#    creates: "{{ POSTGRES_SRC }}/bootstrap"
-#- name: Compiles the {{ POSTGRES_NAME }} application
-#  shell: make
-#  args:
-#    chdir: "{{ POSTGRES_SRC }}"
-#    creates: "{{ POSTGRES_SRC }}/bin/cmake"
-#- name: Installs the {{ POSTGRES_NAME }} application
-#  shell: make install
-#  become: yes
-#  args:
-#    chdir: "{{ POSTGRES_SRC }}"
-#    creates: "/usr/local/bin/cmake"
-#  register: cmakeinstall
-#- name: Update ldconfig
-#  shell: ldconfig
-#  become: yes
-#  when: cmakeinstall.changed
-#- name: Install {{ POSTGRES_NAME }} development dependencies
-#  package:
-#    name: [postgresql-server]
-#  become: yes
-#- name: Initialize the database
-#  shell: /usr/bin/postgresql-setup initdb
-#  args:
-#    creates: /var/lib/pgsql/data/pg_hba.conf
-#  become: yes
-#- name: Start and enable the {{ POSTGRES_NAME }} service.
-#  service:
-#    name: "{{ POSTGRES_SERVICE }}"
-#    enabled: yes
-#    state: started
-#  become: yes
+    creates: "{{ POSTGRES_SRC }}/GNUmakefile"
+- name: Make the {{ POSTGRES_NAME }} application
+  shell: make world
+  args:
+    chdir: "{{ POSTGRES_SRC }}"
+    creates: "{{ POSTGRES_SRC }}/src/bin/psql/psql"
+- name: Make the {{ POSTGRES_NAME }} application
+  shell: make install-world
+  args:
+    chdir: "{{ POSTGRES_SRC }}"
+    creates: "{{ POSTGRES_OPT }}/bin/psql"
+  become: yes
+- name: Create the psql binary symbolic link. 
+  file:
+    src: "{{ POSTGRES_OPT }}/bin/psql"
+    dest: "/usr/local/bin/psql"
+    state: link
+  become: yes
+- name: Update ldconfig
+  shell: ldconfig
+  become: yes
+- name: Create the {{ POSTGRES_NAME }} data directory {{ POSTGRES_DATA }}
+  file:
+    name: "{{ POSTGRES_DATA }}"
+    state: directory
+    owner: "{{ USER_NAME }}"
+    group: "{{ USER_NAME }}"
+  become: yes
+- name: Initialize the database
+  shell: "{{ POSTGRES_OPT }}/bin/initdb -D {{ POSTGRES_DATA }}"
+  args:
+    creates: "{{ POSTGRES_DATA }}/pg_hba.conf"
+- name: Create the {{ POSTGRES_NAME }} systemd service {{ POSTGRES_SYSTEMD }}. 
+  template:
+    src: postgres_systemd_service.j2
+    dest: "{{ POSTGRES_SYSTEMD }}"
+  become: yes
+- name: Reload the services. 
+  systemd:
+    daemon_reload: yes
+  become: yes
+- name: Start and enable the {{ POSTGRES_NAME }} service.
+  service:
+    name: "{{ POSTGRES_SERVICE }}"
+    enabled: yes
+    state: started
+  become: yes
 

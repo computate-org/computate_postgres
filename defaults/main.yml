@@ -7,10 +7,12 @@
 POSTGRES_NAME: postgres
 POSTGRES_SRC: "/usr/local/src/{{ POSTGRES_NAME }}"
 POSTGRES_OPT: "/opt/{{ POSTGRES_NAME }}"
-POSTGRES_SERVICE: "postgresql"
+POSTGRES_DATA: "{{ POSTGRES_OPT }}/data"
+POSTGRES_SERVICE: "postgres-opt"
+POSTGRES_SYSTEMD: "/usr/lib/systemd/system/{{ POSTGRES_SERVICE }}.service"
 POSTGRES_VERSION: 10.15
 POSTGRES_TAG: REL_10_15
-POSTGRES_REPO: git://git.postgresql.org/git/postgresql.git
+POSTGRES_REPO: https://github.com/postgres/postgres.git
 
 ####################
 # Ansible defaults #
