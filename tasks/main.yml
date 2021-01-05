@@ -1,5 +1,5 @@
 ---
-- name: Install {{ POSTGRES_NAME }} development dependencies
+- name: Install {{ POSTGRES_NAME }} development dependencies for Linux
   vars:
     ansible_python_interpreter: /usr/bin/python
   package:
@@ -14,42 +14,67 @@
       - docbook-style-xsl
       - docbook-utils
       - docbook-utils-pdf
-  become: yes
+  become: true
+  when: ansible_distribution != 'MacOSX'
+- name: Install {{ POSTGRES_NAME }} development dependencies for MacOSX
+  vars:
+    ansible_python_interpreter: /usr/bin/python
+  package:
+    name:
+      - gcc
+      - git
+      - open-sp
+  become: false
+  when: ansible_distribution == 'MacOSX'
 - name: Create the {{ POSTGRES_NAME }} source directory {{ POSTGRES_SRC }}
   file:
     name: "{{ POSTGRES_SRC }}"
     state: directory
     owner: "{{ USER_NAME }}"
-    group: "{{ USER_NAME }}"
   become: yes
 - name: Create the {{ POSTGRES_NAME }} opt directory {{ POSTGRES_OPT }}
   file:
     name: "{{ POSTGRES_OPT }}"
     state: directory
     owner: "{{ USER_NAME }}"
-    group: "{{ USER_NAME }}"
   become: yes
 - name: Clone the {{ POSTGRES_NAME }} source code into {{ POSTGRES_SRC }}
   git:
     repo: "{{ POSTGRES_REPO }}"
     dest: "{{ POSTGRES_SRC }}"
     version: "{{ POSTGRES_TAG }}"
-- name: Configure the {{ POSTGRES_NAME }} application
+    depth: 1
+- name: Configure the {{ POSTGRES_NAME }} application for Linux
   shell: "./configure --with-openssl --with-libxml --with-libxslt --with-systemd --with-selinux --prefix={{ POSTGRES_OPT }}"
   args:
     chdir: "{{ POSTGRES_SRC }}"
     creates: "{{ POSTGRES_SRC }}/GNUmakefile"
-- name: Make the {{ POSTGRES_NAME }} application
+  when: ansible_distribution != 'MacOSX'
+- name: Configure the {{ POSTGRES_NAME }} application for MacOSX
+  shell: "./configure --prefix={{ POSTGRES_OPT }}"
+  args:
+    chdir: "{{ POSTGRES_SRC }}"
+    creates: "{{ POSTGRES_SRC }}/GNUmakefile"
+  when: ansible_distribution == 'MacOSX'
+- name: Make the {{ POSTGRES_NAME }} application for Linux
   shell: make world
   args:
     chdir: "{{ POSTGRES_SRC }}"
     creates: "{{ POSTGRES_SRC }}/src/bin/psql/psql"
+  when: ansible_distribution != 'MacOSX'
+- name: Make the {{ POSTGRES_NAME }} application for MacOSX
+  shell: make install
+  args:
+    chdir: "{{ POSTGRES_SRC }}"
+    creates: "{{ POSTGRES_SRC }}/src/bin/psql/psql"
+  when: ansible_distribution == 'MacOSX'
 - name: Make the {{ POSTGRES_NAME }} application
   shell: make install-world
   args:
     chdir: "{{ POSTGRES_SRC }}"
     creates: "{{ POSTGRES_OPT }}/bin/psql"
   become: yes
+  when: ansible_distribution != 'MacOSX'
 - name: Create the psql binary symbolic link. 
   file:
     src: "{{ POSTGRES_OPT }}/bin/psql"
@@ -59,30 +84,46 @@
 - name: Update ldconfig
   shell: ldconfig
   become: yes
+  when: ansible_distribution != 'MacOSX'
 - name: Create the {{ POSTGRES_NAME }} data directory {{ POSTGRES_DATA }}
   file:
     name: "{{ POSTGRES_DATA }}"
     state: directory
     owner: "{{ USER_NAME }}"
-    group: "{{ USER_NAME }}"
   become: yes
 - name: Initialize the database
   shell: "{{ POSTGRES_OPT }}/bin/initdb -D {{ POSTGRES_DATA }}"
   args:
     creates: "{{ POSTGRES_DATA }}/pg_hba.conf"
+
 - name: Create the {{ POSTGRES_NAME }} systemd service {{ POSTGRES_SYSTEMD }}. 
   template:
     src: postgres_systemd_service.j2
     dest: "{{ POSTGRES_SYSTEMD }}"
   become: yes
+  when: ansible_distribution != 'MacOSX'
 - name: Reload the services. 
   systemd:
     daemon_reload: yes
   become: yes
+  when: ansible_distribution != 'MacOSX'
 - name: Start and enable the {{ POSTGRES_NAME }} service.
   service:
     name: "{{ POSTGRES_SERVICE }}"
     enabled: yes
     state: started
   become: yes
+  when: ansible_distribution != 'MacOSX'
+
+- name: Create the {{ POSTGRES_NAME }} launchd service {{ POSTGRES_SYSTEMD }}. 
+  template:
+    src: postgres_launchd_service.j2
+    dest: "~/Library/LaunchAgents/org.postgresql.plist"
+  when: ansible_distribution == 'MacOSX'
+- name: Load the {{ POSTGRES_NAME }} launchd service {{ POSTGRES_SYSTEMD }}. 
+  shell: launchctl load ~/Library/LaunchAgents/org.postgresql.plist
+  when: ansible_distribution == 'MacOSX'
+- name: Start the {{ POSTGRES_NAME }} launchd service {{ POSTGRES_SYSTEMD }}. 
+  shell: launchctl start org.postgresql
+  when: ansible_distribution == 'MacOSX'
 
