@@ -22,7 +22,7 @@
       - docbook-utils
       - docbook-utils-pdf
   become: true
-  when: ansible_distribution != 'MacOSX'
+  when: ansible_pkg_mgr != 'homebrew'
 - name: Install {{ POSTGRES_NAME }} development dependencies for MacOSX
   vars:
     ansible_python_interpreter: /usr/bin/python
@@ -32,7 +32,7 @@
       - git
       - open-sp
   become: false
-  when: ansible_distribution == 'MacOSX'
+  when: ansible_pkg_mgr == 'homebrew'
 - name: Create the {{ POSTGRES_NAME }} source directory {{ POSTGRES_SRC }}
   file:
     name: "{{ POSTGRES_SRC }}"
@@ -56,32 +56,32 @@
   args:
     chdir: "{{ POSTGRES_SRC }}"
     creates: "{{ POSTGRES_SRC }}/GNUmakefile"
-  when: ansible_distribution != 'MacOSX'
+  when: ansible_pkg_mgr != 'homebrew'
 - name: Configure the {{ POSTGRES_NAME }} application for MacOSX
   shell: "./configure --prefix={{ POSTGRES_OPT }}"
   args:
     chdir: "{{ POSTGRES_SRC }}"
     creates: "{{ POSTGRES_SRC }}/GNUmakefile"
-  when: ansible_distribution == 'MacOSX'
+  when: ansible_pkg_mgr == 'homebrew'
 - name: Make the {{ POSTGRES_NAME }} application for Linux
   shell: make world
   args:
     chdir: "{{ POSTGRES_SRC }}"
     creates: "{{ POSTGRES_SRC }}/src/bin/psql/psql"
-  when: ansible_distribution != 'MacOSX'
+  when: ansible_pkg_mgr != 'homebrew'
 - name: Make the {{ POSTGRES_NAME }} application for MacOSX
   shell: make install
   args:
     chdir: "{{ POSTGRES_SRC }}"
     creates: "{{ POSTGRES_SRC }}/src/bin/psql/psql"
-  when: ansible_distribution == 'MacOSX'
+  when: ansible_pkg_mgr == 'homebrew'
 - name: Make the {{ POSTGRES_NAME }} application
   shell: make install-world
   args:
     chdir: "{{ POSTGRES_SRC }}"
     creates: "{{ POSTGRES_OPT }}/bin/psql"
   become: yes
-  when: ansible_distribution != 'MacOSX'
+  when: ansible_pkg_mgr != 'homebrew'
 - name: Create the psql binary symbolic link. 
   file:
     src: "{{ POSTGRES_OPT }}/bin/psql"
@@ -91,7 +91,7 @@
 - name: Update ldconfig
   shell: ldconfig
   become: yes
-  when: ansible_distribution != 'MacOSX'
+  when: ansible_pkg_mgr != 'homebrew'
 - name: Create the {{ POSTGRES_NAME }} data directory {{ POSTGRES_DATA }}
   file:
     name: "{{ POSTGRES_DATA }}"
@@ -108,29 +108,29 @@
     src: postgres_systemd_service.j2
     dest: "{{ POSTGRES_SYSTEMD }}"
   become: yes
-  when: ansible_distribution != 'MacOSX'
+  when: ansible_pkg_mgr != 'homebrew'
 - name: Reload the services. 
   systemd:
     daemon_reload: yes
   become: yes
-  when: ansible_distribution != 'MacOSX'
+  when: ansible_pkg_mgr != 'homebrew'
 - name: Start and enable the {{ POSTGRES_NAME }} service.
   service:
     name: "{{ POSTGRES_SERVICE }}"
     enabled: yes
     state: started
   become: yes
-  when: ansible_distribution != 'MacOSX'
+  when: ansible_pkg_mgr != 'homebrew'
 
 - name: Create the {{ POSTGRES_NAME }} launchd service {{ POSTGRES_SYSTEMD }}. 
   template:
     src: postgres_launchd_service.j2
     dest: "~/Library/LaunchAgents/org.postgresql.plist"
-  when: ansible_distribution == 'MacOSX'
+  when: ansible_pkg_mgr == 'homebrew'
 - name: Load the {{ POSTGRES_NAME }} launchd service {{ POSTGRES_SYSTEMD }}. 
   shell: launchctl load ~/Library/LaunchAgents/org.postgresql.plist
-  when: ansible_distribution == 'MacOSX'
+  when: ansible_pkg_mgr == 'homebrew'
 - name: Start the {{ POSTGRES_NAME }} launchd service {{ POSTGRES_SYSTEMD }}. 
   shell: launchctl start org.postgresql
-  when: ansible_distribution == 'MacOSX'
+  when: ansible_pkg_mgr == 'homebrew'
 
