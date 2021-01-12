@@ -5,7 +5,14 @@
   package:
     name:
       - gcc
+      - make
       - git
+      - bison
+      - bison-devel
+      - flex
+      - flex-devel
+      - readline-devel
+      - zlib-devel
       - systemd-devel
       - docbook-dtds
       - docbook-simple
