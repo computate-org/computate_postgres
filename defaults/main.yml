@@ -4,15 +4,20 @@
 # PostgreSQL defaults #
 #######################
 
-POSTGRES_NAME: postgres
-POSTGRES_SRC: "/usr/local/src/{{ POSTGRES_NAME }}"
-POSTGRES_OPT: "/opt/{{ POSTGRES_NAME }}"
-POSTGRES_DATA: "{{ POSTGRES_OPT }}/data"
-POSTGRES_SERVICE: "postgres-opt"
-POSTGRES_SYSTEMD: "/usr/lib/systemd/system/{{ POSTGRES_SERVICE }}.service"
-POSTGRES_VERSION: 10.15
-POSTGRES_TAG: REL_10_15
-POSTGRES_REPO: https://github.com/postgres/postgres.git
+APP_NAME: postgres
+APP_SRC: "/usr/local/src/{{ APP_NAME }}"
+APP_OPT: "/opt/{{ APP_NAME }}"
+APP_DATA: "{{ APP_OPT }}/data"
+APP_SERVICE: "{{ APP_NAME }}"
+APP_SYSTEMD: "/usr/lib/systemd/system/{{ APP_SERVICE }}.service"
+APP_VERSION: 13.4
+APP_TAG: "REL_{{ APP_VERSION | replace('.', '_') }}"
+APP_CONTAINER_TAG: 13
+APP_REPO: https://github.com/postgres/postgres.git
+APP_USER: "root"
+APP_DB_USER: "{{ lookup('env', 'USER') }}"
+APP_DB_PASSWORD: "Zebra23Cat-"
+APP_DB_DATABASE: "{{ lookup('env', 'USER') }}"
 
 ####################
 # Ansible defaults #
@@ -20,3 +25,4 @@ POSTGRES_REPO: https://github.com/postgres/postgres.git
 
 # Add to an ansible-vault the username of your user on your computer (echo $HOSTNAME). 
 USER_NAME: "{{ lookup('env', 'USER') }}"
+APP_PYTHON: "{{ '/usr/bin/python' if lookup('file', '/usr/bin/python', errors='ignore') else '/usr/bin/python3' }}"

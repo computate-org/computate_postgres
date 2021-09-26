@@ -1,0 +1,14 @@
+[Unit]
+Description=PostgreSQL {{ APP_CONTAINER_TAG }} database server. 
+After=syslog.target network.target
+
+[Service]
+Type=simple
+User={{ APP_USER }}
+WorkingDirectory={{ APP_OPT }}
+ExecStart=/usr/bin/podman run --name {{ APP_NAME }}{% if APP_POD_NETWORK is defined %} --pod {{ DEV_POD }}{% endif %}{% if APP_CONTAINER_NETWORK is defined %} --network {{ APP_CONTAINER_NETWORK }}{% endif %} -v {{ APP_DATA }}:/var/lib/pgsql/data:Z -e "POSTGRES_USER={{ APP_DB_USER }}" -e "POSTGRES_PASSWORD={{ APP_DB_PASSWORD }}" -e "POSTGRES_DATABASE={{ APP_DB_DATABASE }}" --rm {{ APP_NAME }}:{{ APP_VERSION }}
+ExecStop=/usr/bin/podman rm {{ APP_NAME }} -f
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

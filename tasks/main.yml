@@ -1,5 +1,31 @@
 ---
-- name: Install {{ POSTGRES_NAME }} development dependencies for Linux
+- name: "install podman dependency"
+  package:
+    name:
+      - python3
+      - python3-pip
+      - libselinux-python
+      - libsemanage-python
+      - podman
+    state: present
+  become: true
+  when: ansible_pkg_mgr != 'homebrew' and APP_PYTHON == '/usr/bin/python'
+  vars:
+    ansible_python_interpreter: "{{ APP_PYTHON }}"
+- name: "install podman dependency"
+  package:
+    name:
+      - python3
+      - python3-pip
+      - python3-libselinux
+      - python3-libsemanage
+      - podman
+    state: present
+  become: true
+  when: ansible_pkg_mgr != 'homebrew' and APP_PYTHON == '/usr/bin/python3'
+  vars:
+    ansible_python_interpreter: "{{ APP_PYTHON }}"
+- name: Install {{ APP_NAME }} development dependencies for Linux
   vars:
     ansible_python_interpreter: /usr/bin/python
   package:
@@ -23,7 +49,7 @@
       - docbook-utils-pdf
   become: true
   when: ansible_pkg_mgr != 'homebrew'
-- name: Install {{ POSTGRES_NAME }} development dependencies for MacOSX
+- name: Install {{ APP_NAME }} development dependencies for MacOSX
   vars:
     ansible_python_interpreter: /usr/bin/python
   package:
@@ -33,58 +59,58 @@
       - open-sp
   become: false
   when: ansible_pkg_mgr == 'homebrew'
-- name: Create the {{ POSTGRES_NAME }} source directory {{ POSTGRES_SRC }}
+- name: Create the {{ APP_NAME }} source directory {{ APP_SRC }}
   file:
-    name: "{{ POSTGRES_SRC }}"
+    name: "{{ APP_SRC }}"
     state: directory
     owner: "{{ USER_NAME }}"
   become: yes
-- name: Create the {{ POSTGRES_NAME }} opt directory {{ POSTGRES_OPT }}
+- name: Create the {{ APP_NAME }} opt directory {{ APP_OPT }}
   file:
-    name: "{{ POSTGRES_OPT }}"
+    name: "{{ APP_OPT }}"
     state: directory
     owner: "{{ USER_NAME }}"
   become: yes
-- name: Clone the {{ POSTGRES_NAME }} source code into {{ POSTGRES_SRC }}
+- name: Clone the {{ APP_NAME }} source code into {{ APP_SRC }}
   git:
-    repo: "{{ POSTGRES_REPO }}"
-    dest: "{{ POSTGRES_SRC }}"
-    version: "{{ POSTGRES_TAG }}"
+    repo: "{{ APP_REPO }}"
+    dest: "{{ APP_SRC }}"
+    version: "{{ APP_TAG }}"
     depth: 1
-- name: Configure the {{ POSTGRES_NAME }} application for Linux
-  shell: "./configure --with-openssl --with-libxml --with-libxslt --with-systemd --with-selinux --prefix={{ POSTGRES_OPT }}"
+- name: Configure the {{ APP_NAME }} application for Linux
+  shell: "./configure --with-openssl --with-libxml --with-libxslt --with-systemd --with-selinux --prefix={{ APP_OPT }}"
   args:
-    chdir: "{{ POSTGRES_SRC }}"
-    creates: "{{ POSTGRES_SRC }}/GNUmakefile"
+    chdir: "{{ APP_SRC }}"
+    creates: "{{ APP_SRC }}/GNUmakefile"
   when: ansible_pkg_mgr != 'homebrew'
-- name: Configure the {{ POSTGRES_NAME }} application for MacOSX
-  shell: "./configure --prefix={{ POSTGRES_OPT }}"
+- name: Configure the {{ APP_NAME }} application for MacOSX
+  shell: "./configure --prefix={{ APP_OPT }}"
   args:
-    chdir: "{{ POSTGRES_SRC }}"
-    creates: "{{ POSTGRES_SRC }}/GNUmakefile"
+    chdir: "{{ APP_SRC }}"
+    creates: "{{ APP_SRC }}/GNUmakefile"
   when: ansible_pkg_mgr == 'homebrew'
-- name: Make the {{ POSTGRES_NAME }} application for Linux
+- name: Make the {{ APP_NAME }} application for Linux
   shell: make world
   args:
-    chdir: "{{ POSTGRES_SRC }}"
-    creates: "{{ POSTGRES_SRC }}/src/bin/psql/psql"
+    chdir: "{{ APP_SRC }}"
+    creates: "{{ APP_SRC }}/src/bin/psql/psql"
   when: ansible_pkg_mgr != 'homebrew'
-- name: Make the {{ POSTGRES_NAME }} application for MacOSX
+- name: Make the {{ APP_NAME }} application for MacOSX
   shell: make install
   args:
-    chdir: "{{ POSTGRES_SRC }}"
-    creates: "{{ POSTGRES_SRC }}/src/bin/psql/psql"
+    chdir: "{{ APP_SRC }}"
+    creates: "{{ APP_SRC }}/src/bin/psql/psql"
   when: ansible_pkg_mgr == 'homebrew'
-- name: Make the {{ POSTGRES_NAME }} application
+- name: Make the {{ APP_NAME }} application
   shell: make install-world
   args:
-    chdir: "{{ POSTGRES_SRC }}"
-    creates: "{{ POSTGRES_OPT }}/bin/psql"
+    chdir: "{{ APP_SRC }}"
+    creates: "{{ APP_OPT }}/bin/psql"
   become: yes
   when: ansible_pkg_mgr != 'homebrew'
 - name: Create the psql binary symbolic link. 
   file:
-    src: "{{ POSTGRES_OPT }}/bin/psql"
+    src: "{{ APP_OPT }}/bin/psql"
     dest: "/usr/local/bin/psql"
     state: link
   become: yes
@@ -92,45 +118,83 @@
   shell: ldconfig
   become: yes
   when: ansible_pkg_mgr != 'homebrew'
-- name: Create the {{ POSTGRES_NAME }} data directory {{ POSTGRES_DATA }}
-  file:
-    name: "{{ POSTGRES_DATA }}"
-    state: directory
-    owner: "{{ USER_NAME }}"
-  become: yes
-- name: Initialize the database
-  shell: "{{ POSTGRES_OPT }}/bin/initdb -D {{ POSTGRES_DATA }}"
-  args:
-    creates: "{{ POSTGRES_DATA }}/pg_hba.conf"
 
-- name: Create the {{ POSTGRES_NAME }} systemd service {{ POSTGRES_SYSTEMD }}. 
+- name: Check podman version
+  shell: "podman -v | cut -d ' ' -f3 | cut -d '.' -f1"
+  register: PODMAN_MAJOR_VERSION_SHELL
+- name: Set podman major version
+  set_fact:
+    PODMAN_MAJOR_VERSION: "{{ PODMAN_MAJOR_VERSION_SHELL.stdout }}"
+- debug:
+    var: PODMAN_MAJOR_VERSION
+- name: Set network vars
+  set_fact:
+    APP_POD_NETWORK: "{{ (APP_NETWORK if (PODMAN_MAJOR_VERSION | int) > 1) | default(omit) }}"
+    APP_CONTAINER_NETWORK: "{{ ('host' if (PODMAN_MAJOR_VERSION | int) <= 1) | default(omit) }}"
+- debug:
+    var: APP_POD_NETWORK
+- debug:
+    var: APP_CONTAINER_NETWORK
+- name: Create a podman network {{ APP_NETWORK }}
+  containers.podman.podman_network:
+    name: "{{ APP_NETWORK }}"
+    state: present
+  become: true
+  when: APP_POD_NETWORK is defined
+
+- name: Set container_manage_cgroup flag on to run podman containers as systemd services and keep it persistent across reboots
+  ansible.posix.seboolean:
+    name: container_manage_cgroup
+    state: true
+    persistent: true
+  become: true
+  vars:
+    ansible_python_interpreter: "{{ APP_PYTHON }}"
+- name: Create the {{ APP_NAME }} data directory {{ APP_DATA }}. 
+  file:
+    name: "{{ APP_DATA }}"
+    state: directory
+    owner: "{{ APP_USER }}"
+    mode: 0777
+  become: true
+- name: set SELinux permissions on {{ APP_DATA }}
+  sefcontext:
+    target: "{{ APP_DATA }}"
+    setype: container_file_t
+  become: true
+  vars:
+    ansible_python_interpreter: "{{ APP_PYTHON }}"
+- name: reload SELinux policy to ensure that {{ APP_NAME }} is executable
+  command: "restorecon -irv {{ APP_DATA }}"
+  become: true
+- name: Create the {{ APP_NAME }} systemd service {{ APP_SYSTEMD }}. 
   template:
-    src: postgres_systemd_service.j2
-    dest: "{{ POSTGRES_SYSTEMD }}"
-  become: yes
+    src: app_systemd.service
+    dest: "{{ APP_SYSTEMD }}"
+  become: true
   when: ansible_pkg_mgr != 'homebrew'
 - name: Reload the services. 
   systemd:
-    daemon_reload: yes
-  become: yes
+    daemon_reload: true
+  become: true
   when: ansible_pkg_mgr != 'homebrew'
-- name: Start and enable the {{ POSTGRES_NAME }} service.
+- name: Start and enable the {{ APP_NAME }} service. 
   service:
-    name: "{{ POSTGRES_SERVICE }}"
-    enabled: yes
-    state: started
-  become: yes
+    name: "{{ APP_SERVICE }}"
+    enabled: true
+    state: restarted
+  become: true
   when: ansible_pkg_mgr != 'homebrew'
-
-- name: Create the {{ POSTGRES_NAME }} launchd service {{ POSTGRES_SYSTEMD }}. 
+- name: Create the {{ APP_NAME }} launchd service.
   template:
-    src: postgres_launchd_service.j2
-    dest: "~/Library/LaunchAgents/org.postgresql.plist"
+    src: solr_launchd_service.j2
+    dest: "~/Library/LaunchAgents/org.solr.plist"
   when: ansible_pkg_mgr == 'homebrew'
-- name: Load the {{ POSTGRES_NAME }} launchd service {{ POSTGRES_SYSTEMD }}. 
-  shell: launchctl load ~/Library/LaunchAgents/org.postgresql.plist
+- name: Load the {{ APP_NAME }} launchd service.
+  shell: launchctl load ~/Library/LaunchAgents/org.solr.plist
   when: ansible_pkg_mgr == 'homebrew'
-- name: Start the {{ POSTGRES_NAME }} launchd service {{ POSTGRES_SYSTEMD }}. 
-  shell: launchctl start org.postgresql
+- name: Start the {{ APP_NAME }} launchd service.
+  shell: launchctl start org.solr
   when: ansible_pkg_mgr == 'homebrew'
+  changed_when: false
 
