@@ -26,27 +26,20 @@
   vars:
     ansible_python_interpreter: "{{ APP_PYTHON }}"
 - name: Install {{ APP_NAME }} development dependencies for Linux
-  vars:
-    ansible_python_interpreter: /usr/bin/python
   package:
     name:
       - gcc
       - make
       - git
       - bison
-      - bison-devel
       - flex
-      - flex-devel
       - readline-devel
       - zlib-devel
       - systemd-devel
-      - docbook-dtds
-      - docbook-simple
-      - docbook-slides
-      - docbook-style-dsssl
-      - docbook-style-xsl
-      - docbook-utils
-      - docbook-utils-pdf
+      - libxml2-devel
+      - libxslt-devel
+  vars:
+    ansible_python_interpreter: "{{ APP_PYTHON }}"
   become: true
   when: ansible_pkg_mgr != 'homebrew'
 - name: Install {{ APP_NAME }} development dependencies for MacOSX
@@ -139,6 +132,15 @@
   containers.podman.podman_network:
     name: "{{ APP_NETWORK }}"
     state: present
+  become: true
+  when: APP_POD_NETWORK is defined
+- name: Create a podman pod {{ APP_POD }}
+  containers.podman.podman_pod:
+    name: "{{ APP_POD }}"
+    network: "{{ APP_NETWORK }}"
+    publish:
+      - "{{ APP_PORT }}:{{ APP_PORT }}"
+    state: started
   become: true
   when: APP_POD_NETWORK is defined
 

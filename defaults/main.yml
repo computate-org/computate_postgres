@@ -5,6 +5,8 @@
 #######################
 
 APP_NAME: postgres
+APP_NETWORK: "postgres"
+APP_POD: "postgres_pod"
 APP_SRC: "/usr/local/src/{{ APP_NAME }}"
 APP_OPT: "/opt/{{ APP_NAME }}"
 APP_DATA: "{{ APP_OPT }}/data"
@@ -15,6 +17,7 @@ APP_TAG: "REL_{{ APP_VERSION | replace('.', '_') }}"
 APP_CONTAINER_TAG: 13
 APP_REPO: https://github.com/postgres/postgres.git
 APP_USER: "root"
+APP_PORT: "5432"
 APP_DB_USER: "{{ lookup('env', 'USER') }}"
 APP_DB_PASSWORD: "Zebra23Cat-"
 APP_DB_DATABASE: "{{ lookup('env', 'USER') }}"
