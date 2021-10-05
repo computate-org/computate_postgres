@@ -1,38 +1,40 @@
-Role Name
-=========
+# Install postgres
 
-A brief description of the role goes here.
+## Install the latest Python and setup a new Python virtualenv
 
-Requirements
-------------
+```bash
+sudo yum install -y git python3 python3-pip python3-virtualenv python3-libselinux python3-libsemanage python3-policycoreutils
+virtualenv-3 ~/python
+source ~/python/bin/activate
+echo "source ~/python/bin/activate" | tee -a ~/.bashrc
+```
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+## Install the latest Ansible
 
-Role Variables
---------------
+```bash
+pip install setuptools_rust wheel
+pip install --upgrade pip
+pip install ansible selinux setools
+```
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+## Install the postgres ansible role
 
-Dependencies
-------------
+### Create a directory for the ansible role. 
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+```bash
+install -d ~/.ansible/roles/computate.computate_postgres
+```
 
-Example Playbook
-----------------
+### Clone the postgres ansible role. 
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+```bash
+git clone git@github.com:computate-org/computate_postgres.git ~/.ansible/roles/computate.computate_postgres
+```
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+## Run the postgres ansible playbook to install the application locally (requires sudo privileges with -K). 
 
-License
--------
+```bash
+cd ~/.ansible/roles/computate.computate_postgres
+ansible-playbook -K install.yml
+```
 
-BSD
-
-Author Information
-------------------
-
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
