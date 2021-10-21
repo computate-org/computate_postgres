@@ -9,20 +9,28 @@
       - podman
     state: present
   become: true
-  when: ansible_pkg_mgr != 'homebrew' and APP_PYTHON == '/usr/bin/python'
+  when: APP_USE_PODMAN and ansible_pkg_mgr != 'homebrew' and APP_PYTHON == '/usr/bin/python'
   vars:
     ansible_python_interpreter: "{{ APP_PYTHON }}"
-- name: "install podman dependency"
+- name: "install Ansible dependencies"
   package:
     name:
       - python3
       - python3-pip
       - python3-libselinux
       - python3-libsemanage
-      - podman
     state: present
   become: true
   when: ansible_pkg_mgr != 'homebrew' and APP_PYTHON == '/usr/bin/python3'
+  vars:
+    ansible_python_interpreter: "{{ APP_PYTHON }}"
+- name: "install podman dependency"
+  package:
+    name:
+      - podman
+    state: present
+  become: true
+  when: APP_USE_PODMAN and ansible_pkg_mgr != 'homebrew' and APP_PYTHON == '/usr/bin/python3'
   vars:
     ansible_python_interpreter: "{{ APP_PYTHON }}"
 - name: Install {{ APP_NAME }} development dependencies for Linux
@@ -38,6 +46,7 @@
       - systemd-devel
       - libxml2-devel
       - libxslt-devel
+    state: present
   vars:
     ansible_python_interpreter: "{{ APP_PYTHON }}"
   become: true
@@ -50,6 +59,7 @@
       - gcc
       - git
       - open-sp
+    state: present
   become: false
   when: ansible_pkg_mgr == 'homebrew'
 - name: Create the {{ APP_NAME }} source directory {{ APP_SRC }}
@@ -69,7 +79,7 @@
     repo: "{{ APP_REPO }}"
     dest: "{{ APP_SRC }}"
     version: "{{ APP_TAG }}"
-    depth: 1
+    depth: "1"
 - name: Configure the {{ APP_NAME }} application for Linux
   shell: "./configure --with-openssl --with-libxml --with-libxslt --with-systemd --with-selinux --prefix={{ APP_OPT }}"
   args:
@@ -118,22 +128,28 @@
 - name: Set podman major version
   set_fact:
     PODMAN_MAJOR_VERSION: "{{ PODMAN_MAJOR_VERSION_SHELL.stdout }}"
-- debug:
+- name: Debug PODMAN_MAJOR_VERSION
+  debug:
     var: PODMAN_MAJOR_VERSION
+  when: APP_USE_PODMAN
 - name: Set network vars
   set_fact:
     APP_POD_NETWORK: "{{ (APP_NETWORK if (PODMAN_MAJOR_VERSION | int) > 1) | default(omit) }}"
     APP_CONTAINER_NETWORK: "{{ ('host' if (PODMAN_MAJOR_VERSION | int) <= 1) | default(omit) }}"
-- debug:
+- name: Debug APP_POD_NETWORK
+  debug:
     var: APP_POD_NETWORK
-- debug:
+  when: APP_USE_PODMAN
+- name: Debug APP_CONTAINER_NETWORK
+  debug:
     var: APP_CONTAINER_NETWORK
+  when: APP_USE_PODMAN
 - name: Create a podman network {{ APP_NETWORK }}
   containers.podman.podman_network:
     name: "{{ APP_NETWORK }}"
     state: present
   become: true
-  when: APP_POD_NETWORK is defined
+  when: APP_USE_PODMAN and APP_POD_NETWORK is defined
 - name: Create a podman pod {{ APP_POD }}
   containers.podman.podman_pod:
     name: "{{ APP_POD }}"
@@ -142,7 +158,7 @@
       - "{{ APP_PORT }}:{{ APP_PORT }}"
     state: started
   become: true
-  when: APP_POD_NETWORK is defined
+  when: APP_USE_PODMAN and APP_POD_NETWORK is defined
 
 - name: Set container_manage_cgroup flag on to run podman containers as systemd services and keep it persistent across reboots
   ansible.posix.seboolean:
@@ -157,7 +173,7 @@
     name: "{{ APP_DATA }}"
     state: directory
     owner: "{{ APP_USER }}"
-    mode: 0777
+    mode: 0700
   become: true
 - name: set SELinux permissions on {{ APP_DATA }}
   sefcontext:
@@ -169,6 +185,10 @@
 - name: reload SELinux policy to ensure that {{ APP_NAME }} is executable
   command: "restorecon -irv {{ APP_DATA }}"
   become: true
+- name: Initialize the database
+  shell: "{{ APP_OPT }}/bin/initdb -D {{ APP_DATA }}"
+  args:
+    creates: "{{ APP_DATA }}/pg_hba.conf"
 - name: Create the {{ APP_NAME }} systemd service {{ APP_SYSTEMD }}. 
   template:
     src: app_systemd.service

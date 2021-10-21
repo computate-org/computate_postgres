@@ -3,12 +3,23 @@ Description=PostgreSQL {{ APP_CONTAINER_TAG }} database server.
 After=syslog.target network.target
 
 [Service]
+{% if APP_USE_PODMAN %}
 Type=simple
 User={{ APP_USER }}
 WorkingDirectory={{ APP_OPT }}
-ExecStart=/usr/bin/podman run --name {{ APP_NAME }}{% if APP_POD_NETWORK is defined %} --pod {{ APP_POD }}{% endif %}{% if APP_CONTAINER_NETWORK is defined %} --network {{ APP_CONTAINER_NETWORK }}{% endif %} -v {{ APP_DATA }}:/var/lib/pgsql/data:Z -e "POSTGRES_USER={{ APP_DB_USER }}" -e "POSTGRES_PASSWORD={{ APP_DB_PASSWORD }}" -e "POSTGRES_DATABASE={{ APP_DB_DATABASE }}" --rm {{ APP_NAME }}:{{ APP_VERSION }}
+ExecStart=/usr/bin/podman run --name {{ APP_NAME }}{% if APP_POD_NETWORK is defined %} --pod {{ APP_POD }}{% endif %}{% if APP_CONTAINER_NETWORK is defined %} --network {{ APP_CONTAINER_NETWORK }}{% endif %} -v {{ APP_DATA }}:/var/lib/pgsql/data:Z -e "APP_USER={{ APP_DB_USER }}" -e "APP_PASSWORD={{ APP_DB_PASSWORD }}" -e "APP_DATABASE={{ APP_DB_DATABASE }}" --rm {{ APP_NAME }}:{{ APP_VERSION }}
 ExecStop=/usr/bin/podman rm {{ APP_NAME }} -f
 Restart=on-failure
+{% else %}
+Type=forking
+Environment=PGDATA={{ APP_DATA }} PGPORT=5432
+User={{ APP_USER }}
+WorkingDirectory={{ APP_OPT }}
+ExecStart={{ APP_OPT }}/bin/pg_ctl start -D ${PGDATA} -s -o "-p ${PGPORT}" -w -t 300
+ExecStop={{ APP_OPT }}/bin/pg_ctl stop -D ${PGDATA} -s -m fast
+ExecReload={{ APP_OPT }}/bin/pg_ctl reload -D ${PGDATA} -s
+TimeoutSec=300
+{% endif %}
 
 [Install]
 WantedBy=multi-user.target
