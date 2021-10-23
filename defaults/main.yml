@@ -4,24 +4,24 @@
 # PostgreSQL defaults #
 #######################
 
-APP_NAME: postgres
-APP_NETWORK: "postgres"
-APP_POD: "postgres_pod"
-APP_SRC: "/usr/local/src/{{ APP_NAME }}"
-APP_OPT: "/opt/{{ APP_NAME }}"
-APP_DATA: "{{ APP_OPT }}/data"
-APP_SERVICE: "{{ APP_NAME }}"
-APP_SYSTEMD: "/usr/lib/systemd/system/{{ APP_SERVICE }}.service"
-APP_VERSION: 13.4
-APP_TAG: "REL_{{ APP_VERSION | replace('.', '_') }}"
-APP_CONTAINER_TAG: 13
-APP_REPO: https://github.com/postgres/postgres.git
-APP_USER: "{{ lookup('env', 'USER') }}"
-APP_PORT: "5432"
-APP_DB_USER: "{{ lookup('env', 'USER') }}"
-APP_DB_PASSWORD: "Zebra23Cat-"
-APP_DB_DATABASE: "{{ lookup('env', 'USER') }}"
-APP_USE_PODMAN: false
+POSTGRES_NAME: postgres
+POSTGRES_NETWORK: "postgres"
+POSTGRES_POD: "postgres_pod"
+POSTGRES_SRC: "/usr/local/src/{{ POSTGRES_NAME }}"
+POSTGRES_OPT: "/opt/{{ POSTGRES_NAME }}"
+POSTGRES_DATA: "{{ POSTGRES_OPT }}/data"
+POSTGRES_SERVICE: "{{ POSTGRES_NAME }}"
+POSTGRES_SYSTEMD: "/usr/lib/systemd/system/{{ POSTGRES_SERVICE }}.service"
+POSTGRES_VERSION: 13.4
+POSTGRES_TAG: "REL_{{ POSTGRES_VERSION | replace('.', '_') }}"
+POSTGRES_CONTAINER_TAG: 13
+POSTGRES_REPO: https://github.com/postgres/postgres.git
+POSTGRES_USER: "{{ lookup('env', 'USER') }}"
+POSTGRES_PORT: "5432"
+POSTGRES_DB_USER: "{{ lookup('env', 'USER') }}"
+POSTGRES_DB_PASSWORD: "Zebra23Cat-"
+POSTGRES_DB_DATABASE: "{{ lookup('env', 'USER') }}"
+POSTGRES_USE_PODMAN: false
 
 ####################
 # Ansible defaults #
@@ -29,4 +29,4 @@ APP_USE_PODMAN: false
 
 # Add to an ansible-vault the username of your user on your computer (echo $HOSTNAME). 
 USER_NAME: "{{ lookup('env', 'USER') }}"
-APP_PYTHON: "{{ '/usr/bin/python' if lookup('file', '/usr/bin/python', errors='ignore') else '/usr/bin/python3' }}"
+POSTGRES_PYTHON: "{{ '/usr/bin/python' if lookup('file', '/usr/bin/python', errors='ignore') else '/usr/bin/python3' }}"

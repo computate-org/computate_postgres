@@ -1,23 +1,23 @@
 [Unit]
-Description=PostgreSQL {{ APP_CONTAINER_TAG }} database server. 
+Description=PostgreSQL {{ POSTGRES_CONTAINER_TAG }} database server. 
 After=syslog.target network.target
 
 [Service]
-{% if APP_USE_PODMAN %}
+{% if POSTGRES_USE_PODMAN %}
 Type=simple
-User={{ APP_USER }}
-WorkingDirectory={{ APP_OPT }}
-ExecStart=/usr/bin/podman run --name {{ APP_NAME }}{% if APP_POD_NETWORK is defined %} --pod {{ APP_POD }}{% endif %}{% if APP_CONTAINER_NETWORK is defined %} --network {{ APP_CONTAINER_NETWORK }}{% endif %} -v {{ APP_DATA }}:/var/lib/pgsql/data:Z -e "APP_USER={{ APP_DB_USER }}" -e "APP_PASSWORD={{ APP_DB_PASSWORD }}" -e "APP_DATABASE={{ APP_DB_DATABASE }}" --rm {{ APP_NAME }}:{{ APP_VERSION }}
-ExecStop=/usr/bin/podman rm {{ APP_NAME }} -f
+User={{ POSTGRES_USER }}
+WorkingDirectory={{ POSTGRES_OPT }}
+ExecStart=/usr/bin/podman run --name {{ POSTGRES_NAME }}{% if POSTGRES_POD_NETWORK is defined %} --pod {{ POSTGRES_POD }}{% endif %}{% if POSTGRES_CONTAINER_NETWORK is defined %} --network {{ POSTGRES_CONTAINER_NETWORK }}{% endif %} -v {{ POSTGRES_DATA }}:/var/lib/pgsql/data:Z -e "POSTGRES_USER={{ POSTGRES_DB_USER }}" -e "POSTGRES_PASSWORD={{ POSTGRES_DB_PASSWORD }}" -e "POSTGRES_DATABASE={{ POSTGRES_DB_DATABASE }}" --rm {{ POSTGRES_NAME }}:{{ POSTGRES_VERSION }}
+ExecStop=/usr/bin/podman rm {{ POSTGRES_NAME }} -f
 Restart=on-failure
 {% else %}
 Type=forking
-Environment=PGDATA={{ APP_DATA }} PGPORT=5432
-User={{ APP_USER }}
-WorkingDirectory={{ APP_OPT }}
-ExecStart={{ APP_OPT }}/bin/pg_ctl start -D ${PGDATA} -s -o "-p ${PGPORT}" -w -t 300
-ExecStop={{ APP_OPT }}/bin/pg_ctl stop -D ${PGDATA} -s -m fast
-ExecReload={{ APP_OPT }}/bin/pg_ctl reload -D ${PGDATA} -s
+Environment=PGDATA={{ POSTGRES_DATA }} PGPORT=5432
+User={{ POSTGRES_USER }}
+WorkingDirectory={{ POSTGRES_OPT }}
+ExecStart={{ POSTGRES_OPT }}/bin/pg_ctl start -D ${PGDATA} -s -o "-p ${PGPORT}" -w -t 300
+ExecStop={{ POSTGRES_OPT }}/bin/pg_ctl stop -D ${PGDATA} -s -m fast
+ExecReload={{ POSTGRES_OPT }}/bin/pg_ctl reload -D ${PGDATA} -s
 TimeoutSec=300
 {% endif %}
 
