@@ -51,6 +51,13 @@
     ansible_python_interpreter: "{{ POSTGRES_PYTHON }}"
   become: true
   when: ansible_pkg_mgr != 'homebrew'
+- name: Install extra {{ POSTGRES_NAME }} dependencies for Red Hat Linux family
+  package:
+    name:
+      - openssl-devel
+    state: present
+  become: true
+  when: ansible_os_family == 'RedHat'
 - name: Install {{ POSTGRES_NAME }} development dependencies for MacOSX
   vars:
     ansible_python_interpreter: /usr/bin/python
