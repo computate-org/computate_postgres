@@ -28,7 +28,7 @@ install -d ~/.ansible/roles/computate.computate_postgres
 ### Clone the postgres ansible role. 
 
 ```bash
-git clone git@github.com:computate-org/computate_postgres.git ~/.ansible/roles/computate.computate_postgres
+git clone ~/.ansible/roles/computate.computate_postgres ~/.ansible/roles/computate.computate_postgres
 ```
 
 ## Run the postgres ansible playbook to install the application locally (requires sudo privileges with -K). 
