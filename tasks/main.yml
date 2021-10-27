@@ -51,6 +51,22 @@
     ansible_python_interpreter: "{{ POSTGRES_PYTHON }}"
   become: true
   when: ansible_pkg_mgr != 'homebrew'
+- name: Install extra {{ POSTGRES_NAME }} dependencies for Red Hat Linux family
+  package:
+    name:
+      - openssl-devel
+      - perl-core
+      - libselinux-devel
+      - container-selinux
+    state: present
+  become: true
+  when: ansible_os_family == 'RedHat'
+- name: Fix library issue when building {{ POSTGRES_NAME }} for Red Hat Linux family 
+  command: ln -s /usr/lib64/libselinux.so.1 /usr/lib64/libselinux.so
+  become: true
+  when: ansible_os_family == 'RedHat'
+  ignore_errors: true # ignore failure when file already exists
+
 - name: Install {{ POSTGRES_NAME }} development dependencies for MacOSX
   vars:
     ansible_python_interpreter: /usr/bin/python
