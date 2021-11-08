@@ -60,6 +60,8 @@
       - container-selinux
     state: present
   become: true
+  vars:
+    ansible_python_interpreter: "{{ POSTGRES_PYTHON }}"
   when: ansible_os_family == 'RedHat'
 - name: Fix library issue when building {{ POSTGRES_NAME }} for Red Hat Linux family 
   command: ln -s /usr/lib64/libselinux.so.1 /usr/lib64/libselinux.so
