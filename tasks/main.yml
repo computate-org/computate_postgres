@@ -12,6 +12,7 @@
   when: POSTGRES_USE_PODMAN and ansible_pkg_mgr != 'homebrew' and POSTGRES_PYTHON == '/usr/bin/python'
   vars:
     ansible_python_interpreter: "{{ POSTGRES_PYTHON }}"
+  ignore_errors: true
 - name: "install Ansible dependencies"
   package:
     name:
@@ -24,6 +25,7 @@
   when: ansible_pkg_mgr != 'homebrew' and POSTGRES_PYTHON == '/usr/bin/python3'
   vars:
     ansible_python_interpreter: "{{ POSTGRES_PYTHON }}"
+  ignore_errors: true
 - name: "install podman dependency"
   package:
     name:
@@ -33,6 +35,7 @@
   when: POSTGRES_USE_PODMAN and ansible_pkg_mgr != 'homebrew' and POSTGRES_PYTHON == '/usr/bin/python3'
   vars:
     ansible_python_interpreter: "{{ POSTGRES_PYTHON }}"
+  ignore_errors: true
 - name: Install {{ POSTGRES_NAME }} development dependencies for Linux
   package:
     name:
@@ -51,6 +54,7 @@
     ansible_python_interpreter: "{{ POSTGRES_PYTHON }}"
   become: true
   when: ansible_pkg_mgr != 'homebrew'
+  ignore_errors: true
 - name: Install extra {{ POSTGRES_NAME }} dependencies for Red Hat Linux family
   package:
     name:
@@ -63,6 +67,7 @@
   vars:
     ansible_python_interpreter: "{{ POSTGRES_PYTHON }}"
   when: ansible_os_family == 'RedHat'
+  ignore_errors: true
 - name: Fix library issue when building {{ POSTGRES_NAME }} for Red Hat Linux family 
   command: ln -s /usr/lib64/libselinux.so.1 /usr/lib64/libselinux.so
   become: true
@@ -80,18 +85,17 @@
     state: present
   become: false
   when: ansible_pkg_mgr == 'homebrew'
+  ignore_errors: true
 - name: Create the {{ POSTGRES_NAME }} source directory {{ POSTGRES_SRC }}
   file:
     name: "{{ POSTGRES_SRC }}"
     state: directory
     owner: "{{ USER_NAME }}"
-  become: yes
 - name: Create the {{ POSTGRES_NAME }} opt directory {{ POSTGRES_OPT }}
   file:
     name: "{{ POSTGRES_OPT }}"
     state: directory
     owner: "{{ USER_NAME }}"
-  become: yes
 - name: Clone the {{ POSTGRES_NAME }} source code into {{ POSTGRES_SRC }}
   git:
     repo: "{{ POSTGRES_REPO }}"
@@ -127,18 +131,12 @@
   args:
     chdir: "{{ POSTGRES_SRC }}"
     creates: "{{ POSTGRES_OPT }}/bin/psql"
-  become: yes
   when: ansible_pkg_mgr != 'homebrew'
 - name: Create the psql binary symbolic link. 
   file:
     src: "{{ POSTGRES_OPT }}/bin/psql"
-    dest: "/usr/local/bin/psql"
+    dest: "{{ POSTGRES_OPT | dirname | dirname }}/bin/psql"
     state: link
-  become: yes
-- name: Update ldconfig
-  shell: ldconfig
-  become: yes
-  when: ansible_pkg_mgr != 'homebrew'
 
 - name: Check podman version
   shell: "podman -v | cut -d ' ' -f3 | cut -d '.' -f1"
@@ -186,13 +184,13 @@
   become: true
   vars:
     ansible_python_interpreter: "{{ POSTGRES_PYTHON }}"
+  when: POSTGRES_USE_PODMAN
 - name: Create the {{ POSTGRES_NAME }} data directory {{ POSTGRES_DATA }}. 
   file:
     name: "{{ POSTGRES_DATA }}"
     state: directory
     owner: "{{ POSTGRES_USER }}"
     mode: 0700
-  become: true
 - name: set SELinux permissions on {{ POSTGRES_DATA }}
   sefcontext:
     target: "{{ POSTGRES_DATA }}"
@@ -200,31 +198,41 @@
   become: true
   vars:
     ansible_python_interpreter: "{{ POSTGRES_PYTHON }}"
+  when: POSTGRES_USE_PODMAN
 - name: reload SELinux policy to ensure that {{ POSTGRES_NAME }} is executable
   command: "restorecon -irv {{ POSTGRES_DATA }}"
   become: true
+  when: POSTGRES_USE_PODMAN
 - name: Initialize the database
   shell: "{{ POSTGRES_OPT }}/bin/initdb -D {{ POSTGRES_DATA }}"
   args:
     creates: "{{ POSTGRES_DATA }}/pg_hba.conf"
+- name: Create the systemd service directory {{ POSTGRES_SYSTEMD | dirname }}
+  file:
+    name: "{{ POSTGRES_SYSTEMD | dirname }}"
+    state: directory
+    owner: "{{ USER_NAME }}"
+  when: ansible_distribution_file_variety != 'RedHat' or (ansible_distribution_major_version | int) > 7
 - name: Create the {{ POSTGRES_NAME }} systemd service {{ POSTGRES_SYSTEMD }}. 
   template:
     src: app_systemd.service
     dest: "{{ POSTGRES_SYSTEMD }}"
-  become: true
   when: ansible_pkg_mgr != 'homebrew'
+  become: "{{ ansible_distribution_file_variety == 'RedHat' and (ansible_distribution_major_version | int) <= 7 }}"
 - name: Reload the services. 
   systemd:
     daemon_reload: true
-  become: true
+    scope: "{{ 'system' if ansible_distribution_file_variety == 'RedHat' and (ansible_distribution_major_version | int) <= 7 else 'user' }}"
   when: ansible_pkg_mgr != 'homebrew'
+  become: "{{ ansible_distribution_file_variety == 'RedHat' and (ansible_distribution_major_version | int) <= 7 }}"
 - name: Start and enable the {{ POSTGRES_NAME }} service. 
   service:
     name: "{{ POSTGRES_SERVICE }}"
     enabled: true
     state: restarted
-  become: true
+    scope: "{{ 'system' if ansible_distribution_file_variety == 'RedHat' and (ansible_distribution_major_version | int) <= 7 else 'user' }}"
   when: ansible_pkg_mgr != 'homebrew'
+  become: "{{ ansible_distribution_file_variety == 'RedHat' and (ansible_distribution_major_version | int) <= 7 }}"
 - name: Create the {{ POSTGRES_NAME }} launchd service.
   template:
     src: solr_launchd_service.j2

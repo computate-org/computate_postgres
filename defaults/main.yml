@@ -7,11 +7,11 @@
 POSTGRES_NAME: postgres
 POSTGRES_NETWORK: "postgres"
 POSTGRES_POD: "postgres_pod"
-POSTGRES_SRC: "/usr/local/src/{{ POSTGRES_NAME }}"
-POSTGRES_OPT: "/opt/{{ POSTGRES_NAME }}"
+POSTGRES_SRC: "{{ lookup('env', 'HOME') }}/.local/src/{{ POSTGRES_NAME }}"
+POSTGRES_OPT: "{{ lookup('env', 'HOME') }}/.local/opt/{{ POSTGRES_NAME }}"
 POSTGRES_DATA: "{{ POSTGRES_OPT }}/data"
 POSTGRES_SERVICE: "{{ POSTGRES_NAME }}"
-POSTGRES_SYSTEMD: "/usr/lib/systemd/system/{{ POSTGRES_SERVICE }}.service"
+POSTGRES_SYSTEMD: "{{ '/usr/lib/systemd/system' if ansible_distribution_file_variety == 'RedHat' and (ansible_distribution_major_version | int) <= 7 else (lookup('env', 'HOME') + '/.config/systemd/user') }}/{{ POSTGRES_SERVICE }}.service"
 POSTGRES_VERSION: 13.4
 POSTGRES_TAG: "REL_{{ POSTGRES_VERSION | replace('.', '_') }}"
 POSTGRES_CONTAINER_TAG: 13
