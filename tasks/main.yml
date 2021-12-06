@@ -90,12 +90,10 @@
   file:
     name: "{{ POSTGRES_SRC }}"
     state: directory
-    owner: "{{ USER_NAME }}"
 - name: Create the {{ POSTGRES_NAME }} opt directory {{ POSTGRES_OPT }}
   file:
     name: "{{ POSTGRES_OPT }}"
     state: directory
-    owner: "{{ USER_NAME }}"
 - name: Clone the {{ POSTGRES_NAME }} source code into {{ POSTGRES_SRC }}
   git:
     repo: "{{ POSTGRES_REPO }}"
@@ -189,7 +187,6 @@
   file:
     name: "{{ POSTGRES_DATA }}"
     state: directory
-    owner: "{{ POSTGRES_USER }}"
     mode: 0700
 - name: set SELinux permissions on {{ POSTGRES_DATA }}
   sefcontext:
@@ -211,7 +208,6 @@
   file:
     name: "{{ POSTGRES_SYSTEMD | dirname }}"
     state: directory
-    owner: "{{ USER_NAME }}"
   when: ansible_distribution_file_variety != 'RedHat' or (ansible_distribution_major_version | int) > 7
 - name: Create the {{ POSTGRES_NAME }} systemd service {{ POSTGRES_SYSTEMD }}. 
   template:
