@@ -1,91 +1,72 @@
 ---
-- name: "install podman dependency"
-  package:
-    name:
-      - python3
-      - python3-pip
-      - libselinux-python
-      - libsemanage-python
-      - podman
-    state: present
-  become: true
-  when: POSTGRES_USE_PODMAN and ansible_pkg_mgr != 'homebrew' and POSTGRES_PYTHON == '/usr/bin/python'
-  vars:
-    ansible_python_interpreter: "{{ POSTGRES_PYTHON }}"
-  ignore_errors: true
-- name: "install Ansible dependencies"
-  package:
-    name:
-      - python3
-      - python3-pip
-      - python3-libselinux
-      - python3-libsemanage
-    state: present
-  become: true
-  when: ansible_pkg_mgr != 'homebrew' and POSTGRES_PYTHON == '/usr/bin/python3'
-  vars:
-    ansible_python_interpreter: "{{ POSTGRES_PYTHON }}"
-  ignore_errors: true
-- name: "install podman dependency"
-  package:
-    name:
-      - podman
-    state: present
-  become: true
-  when: POSTGRES_USE_PODMAN and ansible_pkg_mgr != 'homebrew' and POSTGRES_PYTHON == '/usr/bin/python3'
-  vars:
-    ansible_python_interpreter: "{{ POSTGRES_PYTHON }}"
-  ignore_errors: true
-- name: Install {{ POSTGRES_NAME }} development dependencies for Linux
-  package:
-    name:
-      - gcc
-      - make
-      - git
-      - bison
-      - flex
-      - readline-devel
-      - zlib-devel
-      - systemd-devel
-      - libxml2-devel
-      - libxslt-devel
-    state: present
-  vars:
-    ansible_python_interpreter: "{{ POSTGRES_PYTHON }}"
-  become: true
-  when: ansible_pkg_mgr != 'homebrew'
-  ignore_errors: true
-- name: Install extra {{ POSTGRES_NAME }} dependencies for Red Hat Linux family
-  package:
-    name:
-      - openssl-devel
-      - perl-core
-      - libselinux-devel
-      - container-selinux
-    state: present
-  become: true
-  vars:
-    ansible_python_interpreter: "{{ POSTGRES_PYTHON }}"
-  when: ansible_os_family == 'RedHat'
-  ignore_errors: true
-- name: Fix library issue when building {{ POSTGRES_NAME }} for Red Hat Linux family 
-  command: ln -s /usr/lib64/libselinux.so.1 /usr/lib64/libselinux.so
-  become: true
-  when: ansible_os_family == 'RedHat'
-  ignore_errors: true # ignore failure when file already exists
-
-- name: Install {{ POSTGRES_NAME }} development dependencies for MacOSX
-  vars:
-    ansible_python_interpreter: /usr/bin/python
-  package:
-    name:
-      - gcc
-      - git
-      - open-sp
-    state: present
-  become: false
-  when: ansible_pkg_mgr == 'homebrew'
-  ignore_errors: true
+#- name: "install podman dependency"
+#  package:
+#    name:
+#      - python3
+#      - python3-pip
+#      - libselinux-python
+#      - libsemanage-python
+#      - podman
+#    state: present
+#  become: true
+#  when: POSTGRES_USE_PODMAN and ansible_pkg_mgr != 'homebrew' and POSTGRES_PYTHON == '/usr/bin/python'
+#  vars:
+#    ansible_python_interpreter: "{{ POSTGRES_PYTHON }}"
+#  ignore_errors: true
+#- name: "install Ansible dependencies"
+#  package:
+#    name:
+#      - python3
+#      - python3-pip
+#      - python3-libselinux
+#      - python3-libsemanage
+#    state: present
+#  become: true
+#  when: ansible_pkg_mgr != 'homebrew' and POSTGRES_PYTHON == '/usr/bin/python3'
+#  vars:
+#    ansible_python_interpreter: "{{ POSTGRES_PYTHON }}"
+#  ignore_errors: true
+#- name: "install podman dependency"
+#  package:
+#    name:
+#      - podman
+#    state: present
+#  become: true
+#  when: POSTGRES_USE_PODMAN and ansible_pkg_mgr != 'homebrew' and POSTGRES_PYTHON == '/usr/bin/python3'
+#  vars:
+#    ansible_python_interpreter: "{{ POSTGRES_PYTHON }}"
+#  ignore_errors: true
+#- name: Install extra {{ POSTGRES_NAME }} dependencies for Red Hat Linux family
+#  package:
+#    name:
+#      - openssl-devel
+#      - perl-core
+#      - libselinux-devel
+#      - container-selinux
+#    state: present
+#  become: true
+#  vars:
+#    ansible_python_interpreter: "{{ POSTGRES_PYTHON }}"
+#  when: ansible_os_family == 'RedHat'
+#  ignore_errors: true
+#- name: Fix library issue when building {{ POSTGRES_NAME }} for Red Hat Linux family 
+#  command: ln -s /usr/lib64/libselinux.so.1 /usr/lib64/libselinux.so
+#  become: true
+#  when: ansible_os_family == 'RedHat'
+#  ignore_errors: true # ignore failure when file already exists
+#
+#- name: Install {{ POSTGRES_NAME }} development dependencies for MacOSX
+#  vars:
+#    ansible_python_interpreter: /usr/bin/python
+#  package:
+#    name:
+#      - gcc
+#      - git
+#      - open-sp
+#    state: present
+#  become: false
+#  when: ansible_pkg_mgr == 'homebrew'
+#  ignore_errors: true
 - name: Create the {{ POSTGRES_NAME }} source directory {{ POSTGRES_SRC }}
   file:
     name: "{{ POSTGRES_SRC }}"
