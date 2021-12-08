@@ -5,7 +5,6 @@ After=syslog.target network.target
 [Service]
 {% if POSTGRES_USE_PODMAN %}
 Type=simple
-User={{ POSTGRES_USER }}
 WorkingDirectory={{ POSTGRES_OPT }}
 ExecStart=/usr/bin/podman run --name {{ POSTGRES_NAME }}{% if POSTGRES_POD_NETWORK is defined %} --pod {{ POSTGRES_POD }}{% endif %}{% if POSTGRES_CONTAINER_NETWORK is defined %} --network {{ POSTGRES_CONTAINER_NETWORK }}{% endif %} -v {{ POSTGRES_DATA }}:/var/lib/pgsql/data:Z -e "POSTGRES_USER={{ POSTGRES_DB_USER }}" -e "POSTGRES_PASSWORD={{ POSTGRES_DB_PASSWORD }}" -e "POSTGRES_DATABASE={{ POSTGRES_DB_DATABASE }}" --rm {{ POSTGRES_NAME }}:{{ POSTGRES_VERSION }}
 ExecStop=/usr/bin/podman rm {{ POSTGRES_NAME }} -f
@@ -13,7 +12,6 @@ Restart=on-failure
 {% else %}
 Type=forking
 Environment=PGDATA={{ POSTGRES_DATA }} PGPORT=5432
-User={{ POSTGRES_USER }}
 WorkingDirectory={{ POSTGRES_OPT }}
 ExecStart={{ POSTGRES_OPT }}/bin/pg_ctl start -D ${PGDATA} -s -o "-p ${PGPORT}" -w -t 300
 ExecStop={{ POSTGRES_OPT }}/bin/pg_ctl stop -D ${PGDATA} -s -m fast
