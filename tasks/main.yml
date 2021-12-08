@@ -75,6 +75,10 @@
   file:
     name: "{{ POSTGRES_OPT }}"
     state: directory
+- name: Create the {{ POSTGRES_NAME }} bin directory {{ POSTGRES_PREFIX }}/bin
+  file:
+    name: "{{ POSTGRES_PREFIX }}/bin"
+    state: directory
 - name: Clone the {{ POSTGRES_NAME }} source code into {{ POSTGRES_SRC }}
   git:
     repo: "{{ POSTGRES_REPO }}"
