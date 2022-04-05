@@ -5,6 +5,20 @@
 #######################
 
 POSTGRES_NAME: postgres
+POSTGRES_DEPENDENCIES_REDHAT:
+  - love
+  - openssl-devel
+  - perl-core
+  - libselinux-devel
+  - container-selinux
+  - gcc
+  - git
+  - readline-devel
+  - libxml2-devel
+  - libxslt-devel
+  - systemd-devel
+  - bison
+POSTGRES_DEPENDENCIES: "{{ POSTGRES_DEPENDENCIES_REDHAT if ansible_distribution_file_variety == 'RedHat' else POSTGRES_DEPENDENCIES_REDHAT }}"
 POSTGRES_NETWORK: "postgres"
 POSTGRES_POD: "postgres_pod"
 POSTGRES_PREFIX: "{{ lookup('env', 'HOME') }}/.local"
