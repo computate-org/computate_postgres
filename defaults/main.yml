@@ -5,6 +5,8 @@
 #######################
 
 POSTGRES_NAME: postgres
+PIP_DEPENDENCIES:
+  - psycopg2-binary
 POSTGRES_DEPENDENCIES_DEBIAN:
   - build-essential
   - libssl-dev

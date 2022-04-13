@@ -1,4 +1,7 @@
 ---
+- name: "Install pip dependencies for python: {{ PIP_DEPENDENCIES | join(' ') }}"
+  ansible.builtin.pip:
+    name: "{{ PIP_DEPENDENCIES }}"
 - name: "Install dependencies as root: {{ POSTGRES_DEPENDENCIES | join(' ') }}"
   package:
     name: "{{ POSTGRES_DEPENDENCIES }}"
