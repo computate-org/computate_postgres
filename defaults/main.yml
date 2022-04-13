@@ -5,8 +5,18 @@
 #######################
 
 POSTGRES_NAME: postgres
+POSTGRES_DEPENDENCIES_DEBIAN:
+  - build-essential
+  - libssl-dev
+  - perl
+  - libreadline-dev
+  - libxml2-dev
+  - libxslt1-dev
+  - libsystemd-dev
+  - libxml2-utils
+  - xsltproc
+  - bison
 POSTGRES_DEPENDENCIES_REDHAT:
-  - love
   - openssl-devel
   - perl-core
   - libselinux-devel
@@ -18,7 +28,7 @@ POSTGRES_DEPENDENCIES_REDHAT:
   - libxslt-devel
   - systemd-devel
   - bison
-POSTGRES_DEPENDENCIES: "{{ POSTGRES_DEPENDENCIES_REDHAT if ansible_distribution_file_variety == 'RedHat' else POSTGRES_DEPENDENCIES_REDHAT }}"
+POSTGRES_DEPENDENCIES: "{{ POSTGRES_DEPENDENCIES_REDHAT if ansible_distribution_file_variety == 'RedHat' else (POSTGRES_DEPENDENCIES_DEBIAN if ansible_distribution_file_variety == 'Debian' else POSTGRES_DEPENDENCIES_REDHAT) }}"
 POSTGRES_NETWORK: "postgres"
 POSTGRES_POD: "postgres_pod"
 POSTGRES_PREFIX: "{{ lookup('env', 'HOME') }}/.local"
