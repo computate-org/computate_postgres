@@ -18,6 +18,7 @@ POSTGRES_DEPENDENCIES_DEBIAN:
   - libxml2-utils
   - xsltproc
   - bison
+  - flex
 POSTGRES_DEPENDENCIES_REDHAT:
   - openssl-devel
   - perl-core

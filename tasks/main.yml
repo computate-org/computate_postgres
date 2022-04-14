@@ -43,7 +43,7 @@
     version: "{{ POSTGRES_TAG }}"
     depth: "1"
 - name: "Configure the {{ POSTGRES_NAME }} application for Linux: ./configure --with-openssl --with-libxml --with-libxslt --with-systemd{{ ' --with-selinux' if ansible_distribution_file_variety == 'RedHat' else '' }} --prefix={{ POSTGRES_OPT }}"
-  shell: "./configure --with-openssl --with-libxml --with-libxslt --with-systemd --with-selinux --prefix={{ POSTGRES_OPT }}"
+  shell: "./configure --with-openssl --with-libxml --with-libxslt --with-systemd{{ ' --with-selinux' if ansible_distribution_file_variety == 'RedHat' else '' }} --prefix={{ POSTGRES_OPT }}"
   args:
     chdir: "{{ POSTGRES_SRC }}"
     creates: "{{ POSTGRES_SRC }}/GNUmakefile"
@@ -72,7 +72,7 @@
     chdir: "{{ POSTGRES_SRC }}"
     creates: "{{ POSTGRES_SRC }}/src/bin/psql/psql"
   when: ansible_pkg_mgr == 'homebrew'
-- name: Make the {{ POSTGRES_NAME }} application
+- name: Install the {{ POSTGRES_NAME }} application
   shell: make install-world
   args:
     chdir: "{{ POSTGRES_SRC }}"
