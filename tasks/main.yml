@@ -8,18 +8,16 @@
   become: true
   register: INSTALL_DEPENDENCIES
   ignore_errors: true
+  when: ansible_pkg_mgr != 'homebrew'
 - name: "Install dependencies as user {{ POSTGRES_USER }}: {{ POSTGRES_DEPENDENCIES | join(' ') }}"
   shell: "pkcon install -y {{ item }} | true"
   loop: "{{ POSTGRES_DEPENDENCIES }}"
-  when: INSTALL_DEPENDENCIES.failed
+  when: ansible_pkg_mgr != 'homebrew' and INSTALL_DEPENDENCIES.failed
 - name: Install {{ POSTGRES_NAME }} development dependencies for MacOSX
   vars:
     ansible_python_interpreter: /usr/bin/python
   package:
-    name:
-      - gcc
-      - git
-      - open-sp
+    name: "{{ POSTGRES_DEPENDENCIES }}"
     state: present
   become: false
   when: ansible_pkg_mgr == 'homebrew'
@@ -84,70 +82,11 @@
     dest: "{{ POSTGRES_OPT | dirname | dirname }}/bin/psql"
     state: link
 
-- name: Check podman version
-  shell: "podman -v | cut -d ' ' -f3 | cut -d '.' -f1"
-  register: PODMAN_MAJOR_VERSION_SHELL
-- name: Set podman major version
-  set_fact:
-    PODMAN_MAJOR_VERSION: "{{ PODMAN_MAJOR_VERSION_SHELL.stdout }}"
-- name: Debug PODMAN_MAJOR_VERSION
-  debug:
-    var: PODMAN_MAJOR_VERSION
-  when: POSTGRES_USE_PODMAN
-- name: Set network vars
-  set_fact:
-    POSTGRES_POD_NETWORK: "{{ (POSTGRES_NETWORK if (PODMAN_MAJOR_VERSION | int) > 1) | default(omit) }}"
-    POSTGRES_CONTAINER_NETWORK: "{{ ('host' if (PODMAN_MAJOR_VERSION | int) <= 1) | default(omit) }}"
-- name: Debug POSTGRES_POD_NETWORK
-  debug:
-    var: POSTGRES_POD_NETWORK
-  when: POSTGRES_USE_PODMAN
-- name: Debug POSTGRES_CONTAINER_NETWORK
-  debug:
-    var: POSTGRES_CONTAINER_NETWORK
-  when: POSTGRES_USE_PODMAN
-- name: Create a podman network {{ POSTGRES_NETWORK }}
-  containers.podman.podman_network:
-    name: "{{ POSTGRES_NETWORK }}"
-    state: present
-  become: true
-  when: POSTGRES_USE_PODMAN and POSTGRES_POD_NETWORK is defined
-- name: Create a podman pod {{ POSTGRES_POD }}
-  containers.podman.podman_pod:
-    name: "{{ POSTGRES_POD }}"
-    network: "{{ POSTGRES_NETWORK }}"
-    publish:
-      - "{{ POSTGRES_PORT }}:{{ POSTGRES_PORT }}"
-    state: started
-  become: true
-  when: POSTGRES_USE_PODMAN and POSTGRES_POD_NETWORK is defined
-
-- name: Set container_manage_cgroup flag on to run podman containers as systemd services and keep it persistent across reboots
-  ansible.posix.seboolean:
-    name: container_manage_cgroup
-    state: true
-    persistent: true
-  become: true
-  vars:
-    ansible_python_interpreter: "{{ POSTGRES_PYTHON }}"
-  when: POSTGRES_USE_PODMAN
 - name: Create the {{ POSTGRES_NAME }} data directory {{ POSTGRES_DATA }}. 
   file:
     name: "{{ POSTGRES_DATA }}"
     state: directory
     mode: 0700
-- name: set SELinux permissions on {{ POSTGRES_DATA }}
-  sefcontext:
-    target: "{{ POSTGRES_DATA }}"
-    setype: container_file_t
-  become: true
-  vars:
-    ansible_python_interpreter: "{{ POSTGRES_PYTHON }}"
-  when: POSTGRES_USE_PODMAN
-- name: reload SELinux policy to ensure that {{ POSTGRES_NAME }} is executable
-  command: "restorecon -irv {{ POSTGRES_DATA }}"
-  become: true
-  when: POSTGRES_USE_PODMAN
 - name: Initialize the database
   shell: "{{ POSTGRES_OPT }}/bin/initdb -D {{ POSTGRES_DATA }}"
   args:
@@ -156,7 +95,7 @@
   file:
     name: "{{ POSTGRES_SYSTEMD | dirname }}"
     state: directory
-  when: ansible_distribution_file_variety != 'RedHat' or (ansible_distribution_major_version | int) > 7
+  when: ansible_pkg_mgr != 'homebrew' and (ansible_distribution_file_variety != 'RedHat' or (ansible_distribution_major_version | int) > 7)
 - name: Create the {{ POSTGRES_NAME }} systemd service {{ POSTGRES_SYSTEMD }}. 
   template:
     src: app_systemd.service
@@ -179,14 +118,14 @@
   become: "{{ ansible_distribution_file_variety == 'RedHat' and (ansible_distribution_major_version | int) <= 7 }}"
 - name: Create the {{ POSTGRES_NAME }} launchd service.
   template:
-    src: solr_launchd_service.j2
-    dest: "~/Library/LaunchAgents/org.solr.plist"
+    src: app_launchd.service
+    dest: "~/Library/LaunchAgents/org.postgresql.plist"
   when: ansible_pkg_mgr == 'homebrew'
 - name: Load the {{ POSTGRES_NAME }} launchd service.
-  shell: launchctl load ~/Library/LaunchAgents/org.solr.plist
+  shell: launchctl load ~/Library/LaunchAgents/org.postgresql.plist
   when: ansible_pkg_mgr == 'homebrew'
 - name: Start the {{ POSTGRES_NAME }} launchd service.
-  shell: launchctl start org.solr
+  shell: launchctl start org.postgresql
   when: ansible_pkg_mgr == 'homebrew'
   changed_when: false
 
