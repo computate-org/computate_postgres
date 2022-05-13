@@ -35,6 +35,7 @@ POSTGRES_DEPENDENCIES_REDHAT:
   - libxslt-devel
   - systemd-devel
   - bison
+  - flex
 POSTGRES_DEPENDENCIES: "{{ POSTGRES_DEPENDENCIES_MACOSX if ansible_pkg_mgr == 'homebrew' else (POSTGRES_DEPENDENCIES_REDHAT if ansible_distribution_file_variety == 'RedHat' else (POSTGRES_DEPENDENCIES_DEBIAN if ansible_distribution_file_variety == 'Debian' else POSTGRES_DEPENDENCIES_REDHAT)) | default([]) }}"
 POSTGRES_NETWORK: "postgres"
 POSTGRES_POD: "postgres_pod"
