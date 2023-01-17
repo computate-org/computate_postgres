@@ -71,7 +71,7 @@
     creates: "{{ POSTGRES_SRC }}/src/bin/psql/psql"
   when: ansible_pkg_mgr == 'homebrew'
 - name: Install the {{ POSTGRES_NAME }} application
-  shell: make install-world
+  shell: make install
   args:
     chdir: "{{ POSTGRES_SRC }}"
     creates: "{{ POSTGRES_OPT }}/bin/psql"
